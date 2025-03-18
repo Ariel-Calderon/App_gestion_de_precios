@@ -57,3 +57,15 @@ class Modelo:
         if condicion:
             query += f" WHERE {condicion}"
         return self.ejecutar_consulta(query, valores)
+    
+    def obtener_campos(self,tabla):
+        conexion = self.abrir_conexion()
+        try:
+            cursor = conexion.cursor()
+            cursor.execute(f"PRAGMA table_info ({tabla})")
+            lista_de_campos = []
+            for fila in cursor.fetchall():
+                lista_de_campos.append(fila[1])                
+            return lista_de_campos
+        finally:
+            conexion.close()
