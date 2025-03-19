@@ -69,3 +69,12 @@ class Modelo:
             return lista_de_campos
         finally:
             conexion.close()
+
+    def contar_registros(self,tabla,campo,valor):
+        conexion = self.abrir_conexion()
+        try:
+            cursor = conexion.cursor()
+            cursor.execute(F"SELECT COUNT (*) FROM {tabla} WHERE {campo} = {valor}")
+            return cursor.fetchall()[0][0]
+        finally:
+            conexion.close()

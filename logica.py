@@ -1,4 +1,5 @@
 from math import prod
+from pickle import FALSE, TRUE
 from modelo import Modelo
 
 base = Modelo("database.db")
@@ -31,6 +32,27 @@ class Entidad:
                 valores.append(getattr(self,campo,None))
         base.actualizar(self.tabla,campos_sin_id,valores,f" {self.campo_clave} = {self.id}")
 
+    def guardar(self):
+        guardado = False
+        valores = []
+        campos = []
+        for campo in self.lista_de_campos:
+            valor = getattr(self,campo,None)
+            if(campo != self.campo_clave):
+                valores.append(valor)
+                campos.append(campo)
+            elif(valor is not None):
+                if(base.contar_registros(self.tabla,self.campo_clave,valor) == 0 ):
+                    valores.append(valor)
+                    campos.append(campo)
+                else:
+                    return guardado #devuelve False si ya un registro con ese id
+        base.insertar(self.tabla,campos,valores)
+        guardado = True   
+        return guardado
+
+
+
 
 
 class Producto(Entidad):
@@ -46,5 +68,11 @@ articulo = Producto(29)
 articulo.imprimir()
 articulo.descripcion = "prueba modificacion"
 articulo.modificar()
+cantidad = base.contar_registros("Productos","codigo_de_PLU", 27)
+print (cantidad)
+articulo.codigo_de_PLU = 9000
+resultado = articulo.guardar()
+print (resultado)
+
 
 
