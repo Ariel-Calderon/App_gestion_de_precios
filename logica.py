@@ -33,7 +33,6 @@ class Entidad:
         base.actualizar(self.tabla,campos_sin_id,valores,f" {self.campo_clave} = {self.id}")
 
     def guardar(self):
-        guardado = False
         valores = []
         campos = []
         for campo in self.lista_de_campos:
@@ -46,10 +45,9 @@ class Entidad:
                     valores.append(valor)
                     campos.append(campo)
                 else:
-                    return guardado #devuelve False si ya un registro con ese id
+                    return False #si ya un registro con ese id
         base.insertar(self.tabla,campos,valores)
-        guardado = True   
-        return guardado
+        return True
 
 
 
