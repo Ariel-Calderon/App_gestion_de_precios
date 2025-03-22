@@ -48,6 +48,23 @@ class Entidad:
                     return False #si ya un registro con ese id
         base.insertar(self.tabla,campos,valores)
         return True
+    
+    def asignar_valores(self,formulario):    
+        for campo in self.lista_de_campos:
+            valor = getattr(formulario, campo,None)
+            if (valor is not None):
+                valor = valor.get()
+                setattr(self,campo,valor)
+
+    #completa los inputs de un formulario con los valores del objeto
+    def completar_campos(self,formulario):
+        for campo in self.lista_de_campos:
+            variable_input= getattr(formulario, campo, None)
+            if (variable_input is not None):
+                valor=getattr(self,campo)
+                variable_input.set(valor)
+        
+            
 
 
 
