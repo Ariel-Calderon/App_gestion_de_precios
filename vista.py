@@ -1,7 +1,7 @@
 from cProfile import label
 import tkinter as tk
 from tkinter import Menu
-from logica import Producto
+from logica import ListaSeccionesImputables, Producto
 
 from setuptools import Command
 
@@ -80,12 +80,14 @@ class PlantillaProducto(tk.Toplevel):
     def __init__(self, parent,titulo,modo="guardar"):
         super().__init__(parent)
         self.title(titulo)
-        self.geometry("400x300")
+        self.geometry("400x300")      
         
-        # Campos de entrada
-        tk.Label(self, text="Nombre de Sección").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        
+        tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
         self.nombre_de_seccion = tk.StringVar()
-        self.nombre_de_seccion_entrada = tk.Entry(self, textvariable=self.nombre_de_seccion)
+        secciones = ListaSeccionesImputables()
+        self.lista_de_secciones = secciones.listar_columna("descripcion") #["Seccion 1", "Seccion 2", "Seccion 3"]
+        self.nombre_de_seccion_entrada = tk.OptionMenu(self,self.nombre_de_seccion,*self.lista_de_secciones)
         self.nombre_de_seccion_entrada.grid(row=0, column=1, padx=10, pady=5)
 
         tk.Label(self, text="Código de PLU").grid(row=1, column=0, padx=10, pady=5, sticky="w")

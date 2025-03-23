@@ -7,18 +7,27 @@ base = Modelo("database.db")
 class Entidad:
 
     #se asignan los atributos de manera dinámica, usando los nombres de los campos de la tabla
-    def __init__(self,tabla,campo_clave, id=None):
+    def __init__(self,tabla,campo_clave, id=None, lista_de_campos=None,lista_de_valores=None):
         self.tabla = tabla
         self.campo_clave = campo_clave
         self.id = id 
-        self.lista_de_campos = base.obtener_campos(tabla)
-        if (id is not None):
-            valores = base.seleccionar(tabla, "*", f"{campo_clave} = ?",[id])[0]
-            for campo, valor in zip(self.lista_de_campos,valores):
-                setattr(self,campo,valor)
+        #La lista de campos y valores vienen como argumento cuando es para una lista de objetos
+        #de manera que no tenga que consultar a la base con cada construcción
+        if (lista_de_campos is not None):
+            self.lista_de_campos = lista_de_campos
+        elif(id is not None):
+            self.lista_de_campos = base.obtener_campos(tabla)
+            lista_de_valores = base.seleccionar(tabla, "*", f"{campo_clave} = ?",[id])[0]
         else:
+            self.lista_de_campos = base.obtener_campos(tabla)
+
+        if (id is None and lista_de_valores is None):
             for campo in self.lista_de_campos:
                 setattr(self,campo,None)
+        else:
+            for campo, valor in zip(self.lista_de_campos,lista_de_valores):
+                setattr(self,campo,valor)
+
 
     def borrar(self):
         base.eliminar(self.tabla,f"{self.campo_clave} = ?",[self.id])
@@ -49,6 +58,7 @@ class Entidad:
         base.insertar(self.tabla,campos,valores)
         return True
     
+    #Asigna los valores de los campos de un formulario a los atributos del objeto
     def asignar_valores(self,formulario):    
         for campo in self.lista_de_campos:
             valor = getattr(formulario, campo,None)
@@ -56,38 +66,53 @@ class Entidad:
                 valor = valor.get()
                 setattr(self,campo,valor)
 
-    #completa los inputs de un formulario con los valores del objeto
+    #completa los inputs de un formulario con los valores de los atributos del objeto
     def completar_campos(self,formulario):
         for campo in self.lista_de_campos:
             variable_input= getattr(formulario, campo, None)
             if (variable_input is not None):
                 valor=getattr(self,campo)
                 variable_input.set(valor)
+
+    def obtener_valor(self,campo):
+        return getattr(self,campo)
         
             
 
+class Lista:
+    def __init__(self,tabla,clase_objeto,condicion=None,valores=None):
+        matriz = base.seleccionar(tabla,"*",condicion,valores)
+        campos = base.obtener_campos(tabla)
+        self.lista = []
+        for registro in matriz:
+            self.lista.append(clase_objeto(lista_de_campos=campos,lista_de_valores=registro))
+
+    def listar_columna(self,columna):
+        valores= []
+        for linea in self.lista:
+            valores.append(getattr(linea, columna, None))
+        return valores
 
 
 
 
 class Producto(Entidad):
+    def __init__(self, id=None,lista_de_campos=None,lista_de_valores=None):
+        super().__init__("Productos","codigo_de_PLU", id,lista_de_campos,lista_de_valores)
 
-    def __init__(self, id=None):
-        super().__init__("Productos","codigo_de_PLU", id)
+class ListaProductos (Lista):
+    def __init__(self,condicion=None,valores=None):
+        super().__init__("Productos",Producto,condicion,valores)
 
-    def imprimir (self):
-        print (self.descripcion)
+class Seccion(Entidad):
+    def __init__(self, id=None, lista_de_campos=None, lista_de_valores=None):
+        super().__init__("Secciones", "id", id, lista_de_campos, lista_de_valores)
 
+class ListaSecciones(Lista):
+    def __init__(self, condicion=None, valores=None):
+        super().__init__("Secciones", Seccion, condicion, valores)
 
-articulo = Producto(29)
-articulo.imprimir()
-articulo.descripcion = "prueba modificacion"
-articulo.modificar()
-cantidad = base.contar_registros("Productos","codigo_de_PLU", 27)
-print (cantidad)
-articulo.codigo_de_PLU = 9000
-resultado = articulo.guardar()
-print (resultado)
-
-
+class ListaSeccionesImputables(ListaSecciones):
+    def __init__(self):
+        super().__init__("imputable = ?", [1])
 
