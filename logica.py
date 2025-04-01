@@ -87,10 +87,17 @@ class Lista:
         for registro in matriz:
             self.lista.append(clase_objeto(lista_de_campos=campos,lista_de_valores=registro))
 
-    def listar_columna(self,columna):
+    def listar_columnas(self,columnas):
         valores= []
         for linea in self.lista:
-            valores.append(getattr(linea, columna, None))
+            if len(columnas)!= 1:
+                valor = []
+                for columna in columnas:
+                    valor.append(getattr(linea, columna, None))
+            else:
+                valor = getattr(linea, columnas[0],None)
+            valores.append(valor)
+        print (valores)
         return valores
 
 
@@ -112,7 +119,4 @@ class ListaSecciones(Lista):
     def __init__(self, condicion=None, valores=None):
         super().__init__("Secciones", Seccion, condicion, valores)
 
-class ListaSeccionesImputables(ListaSecciones):
-    def __init__(self):
-        super().__init__("imputable = ?", [1])
 
