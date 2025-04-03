@@ -95,6 +95,9 @@ class App(tk.Tk):
     def modificar_proveedores(self):
         pass
 
+
+
+
 class Plantilla(tk.Toplevel):
 
     def __init__(self,parent,clase_objeto):
@@ -111,9 +114,38 @@ class Plantilla(tk.Toplevel):
         self.objeto.asignar_valores(self)
         self.objeto.modificar()
 
-    def seleccionar(self,campo_clave):
-        self.objeto= self.clase_objeto(campo_clave.get())
-        self.objeto.completar_campos(self)
+    '''
+    clave_principal es una lista que contiene:
+      [objeto combobox, lista de id] cuando se trata de un combobox
+      [objeto entry] cuando se trata de una entrada de texto y el valor se obtiene con get
+
+    claves_externas es una lista que contiene listas del siguiente tipo:
+        [objeto combox,"campo clave externa db",lista de id] para cada combobox con claves externas    
+    '''
+    
+    def seleccionar(self,clave_principal, claves_externas = None):   
+        if (len(clave_principal)>1):
+            indice = clave_principal[0].current()
+            id = clave_principal[1][indice]
+        else:                
+            id = clave_principal[0].get()
+        
+        objeto = self.clase_objeto(id)
+        objeto.completar_campos(self)
+
+        if claves_externas is not None:
+            for combo in claves_externas:
+                id = getattr(objeto,combo[1])
+                indice = 0
+                for clave in combo[2]:
+                    if clave == id:
+                        break
+                    indice += 1
+                combo[0].current(indice)
+                
+                
+
+
 
 
 
@@ -128,9 +160,10 @@ class PlantillaProducto(Plantilla):
         tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
         self.nombre_de_seccion = tk.StringVar()
         secciones = ListaSecciones()
-        self.lista_de_secciones = secciones.listar_columnas("descripcion")
-        self.nombre_de_seccion_entrada = tk.OptionMenu(self,self.nombre_de_seccion,*self.lista_de_secciones)
-        self.nombre_de_seccion_entrada.grid(row=0, column=1, padx=10, pady=5)
+        lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
+        lista_de_secciones_id = secciones.listar_columnas(["id"])
+        self.seccion_entrada = ttk.Combobox(self,values=lista_de_secciones_descripcion)
+        self.seccion_entrada.grid(row=0, column=1, padx=10, pady=5)
 
         tk.Label(self, text="Código de PLU").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.codigo_de_PLU = tk.StringVar()
@@ -138,7 +171,8 @@ class PlantillaProducto(Plantilla):
         self.codigo_de_PLU_entrada.grid(row=1, column=1, padx=10, pady=5)
 
         if (modo=="modificar"):
-            tk.Button(self, text="Seleccionar", command=lambda: self.seleccionar(self.codigo_de_PLU)).grid(row=1, column=2, columnspan=2, pady=20)
+            combo_1= [self.seccion_entrada,"secciones",lista_de_secciones_id]
+            tk.Button(self, text="Seleccionar", command=lambda: self.seleccionar([self.codigo_de_PLU],[combo_1])).grid(row=1, column=2, columnspan=2, pady=20)
 
         tk.Label(self, text="Descripción").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.descripcion = tk.StringVar()
@@ -162,18 +196,19 @@ class PlantillaSeccion(Plantilla):
         self.geometry("400x300") 
 
         
-        if (modo=="modificar"):
-            tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-            self.nombre_de_seccion = tk.StringVar()
+        if (modo=="modificar"):                        
             secciones = ListaSecciones()
-            self.lista_de_secciones_nombre = secciones.listar_columnas(["descripcion"])
-            self.lista_de_secciones_id = secciones.listar_columnas(["id"])
-            self.nombre_de_seccion_entrada = tk.OptionMenu(self,self.nombre_de_seccion,*self.lista_de_secciones_nombre)
-            self.nombre_de_seccion_entrada.grid(row=0, column=1, padx=10, pady=5)
-            
-            tk.Button(self, text="Seleccionar", command=lambda: self.seleccionar(self.descripcion)).grid(row=1, column=2, columnspan=2, pady=20)
+            lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
+            lista_de_secciones_id = secciones.listar_columnas(["id"])
 
+            tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            #no es necesario usar tk.StringVar() ya que el id se obtiene de la lista
+            self.id_entrada = ttk.Combobox(self,  values=lista_de_secciones_descripcion)
+            self.id_entrada.grid(row=0, column=1, padx=10, pady=5)
+                      
+            tk.Button(self, text="Seleccionar", command=lambda: self.seleccionar([self.id_entrada,lista_de_secciones_id])).grid(row=1, column=2, columnspan=2, pady=20)
 
+   
         tk.Label(self, text="Descripción").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.descripcion = tk.StringVar()
         self.descripcion_entrada = tk.Entry(self,textvariable=self.descripcion)
