@@ -61,10 +61,14 @@ class Entidad:
     #Asigna los valores de los campos de un formulario a los atributos del objeto
     def asignar_valores(self,formulario):    
         for campo in self.lista_de_campos:
-            valor = getattr(formulario, campo,None)
-            if (valor is not None):
-                valor = valor.get()
+            atributo = getattr(formulario, campo,None)
+            if (atributo is not None):
+                valor = atributo.get()
                 setattr(self,campo,valor)
+        if (formulario.lista_de_comboboxes is not None):
+            for combo in formulario.lista_de_comboboxes:
+                valor = combo[2][combo[0].current()]
+                setattr(self,combo[1],valor)
 
     #completa los inputs de un formulario con los valores de los atributos del objeto
     def completar_campos(self,formulario):
@@ -73,6 +77,15 @@ class Entidad:
             if (variable_input is not None):
                 valor=getattr(self,campo)
                 variable_input.set(valor)
+        if formulario.lista_de_comboboxes is not None:
+            for combo in formulario.lista_de_comboboxes:
+                id = getattr(self,combo[1])
+                indice = 0
+                for clave in combo[2]:
+                    if clave == id:
+                        break
+                    indice += 1
+                combo[0].current(indice)
 
     def obtener_valor(self,campo):
         return getattr(self,campo)

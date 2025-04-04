@@ -103,7 +103,9 @@ class Plantilla(tk.Toplevel):
     def __init__(self,parent,clase_objeto):
         super().__init__(parent)
         self.clase_objeto = clase_objeto
-
+        self.lista_de_comboboxes = [] # [[objeto combox,"campo clave externa db",lista de id],]
+        self.clave_principal = [] #[objeto combobox, lista de id] cuando está implementada con un combobox
+                                  #[objeto entry] cuando se trata de una entrada de texto y el valor se obtiene con get
     
     def guardar(self):
         self.objeto = self.clase_objeto()        
@@ -114,34 +116,19 @@ class Plantilla(tk.Toplevel):
         self.objeto.asignar_valores(self)
         self.objeto.modificar()
 
-    '''
-    clave_principal es una lista que contiene:
-      [objeto combobox, lista de id] cuando se trata de un combobox
-      [objeto entry] cuando se trata de una entrada de texto y el valor se obtiene con get
-
-    claves_externas es una lista que contiene listas del siguiente tipo:
-        [objeto combox,"campo clave externa db",lista de id] para cada combobox con claves externas    
-    '''
+   
     
-    def seleccionar(self,clave_principal, claves_externas = None):   
-        if (len(clave_principal)>1):
-            indice = clave_principal[0].current()
-            id = clave_principal[1][indice]
+    def seleccionar(self):   
+        if (len(self.clave_principal)>1):
+            indice = self.clave_principal[0].current()
+            id = self.clave_principal[1][indice]
         else:                
-            id = clave_principal[0].get()
+            id = self.clave_principal[0].get()
         
-        objeto = self.clase_objeto(id)
-        objeto.completar_campos(self)
+        self.objeto = self.clase_objeto(id)
+        self.objeto.completar_campos(self)
 
-        if claves_externas is not None:
-            for combo in claves_externas:
-                id = getattr(objeto,combo[1])
-                indice = 0
-                for clave in combo[2]:
-                    if clave == id:
-                        break
-                    indice += 1
-                combo[0].current(indice)
+        
                 
                 
 
@@ -154,25 +141,31 @@ class PlantillaProducto(Plantilla):
     def __init__(self, parent,titulo,modo="guardar"):
         super().__init__(parent,Producto)
         self.title(titulo)
-        self.geometry("400x300")      
+        self.geometry("400x300")            
         
         
         tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        self.nombre_de_seccion = tk.StringVar()
+        #self.nombre_de_seccion = tk.StringVar()
         secciones = ListaSecciones()
         lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
         lista_de_secciones_id = secciones.listar_columnas(["id"])
         self.seccion_entrada = ttk.Combobox(self,values=lista_de_secciones_descripcion)
         self.seccion_entrada.grid(row=0, column=1, padx=10, pady=5)
 
+        #declaro el combobox y lo agrego a la lista, para que pueda ser procesado
+        #en las funciones de guardar, seleccionar y modificar.
+        combo_1= [self.seccion_entrada,"secciones",lista_de_secciones_id]
+        self.lista_de_comboboxes.append(combo_1)
+
         tk.Label(self, text="Código de PLU").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.codigo_de_PLU = tk.StringVar()
         self.codigo_de_PLU_entrada = tk.Entry(self,textvariable=self.codigo_de_PLU)
         self.codigo_de_PLU_entrada.grid(row=1, column=1, padx=10, pady=5)
 
-        if (modo=="modificar"):
-            combo_1= [self.seccion_entrada,"secciones",lista_de_secciones_id]
-            tk.Button(self, text="Seleccionar", command=lambda: self.seleccionar([self.codigo_de_PLU],[combo_1])).grid(row=1, column=2, columnspan=2, pady=20)
+        self.clave_principal = [self.codigo_de_PLU]
+
+        if (modo=="modificar"):            
+            tk.Button(self, text="Seleccionar", command= self.seleccionar).grid(row=1, column=2, columnspan=2, pady=20)
 
         tk.Label(self, text="Descripción").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.descripcion = tk.StringVar()
@@ -199,14 +192,16 @@ class PlantillaSeccion(Plantilla):
         if (modo=="modificar"):                        
             secciones = ListaSecciones()
             lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
-            lista_de_secciones_id = secciones.listar_columnas(["id"])
+            
 
             tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
             #no es necesario usar tk.StringVar() ya que el id se obtiene de la lista
             self.id_entrada = ttk.Combobox(self,  values=lista_de_secciones_descripcion)
             self.id_entrada.grid(row=0, column=1, padx=10, pady=5)
+
+            self.clave_principal = [self.id_entrada,secciones.listar_columnas(["id"])]
                       
-            tk.Button(self, text="Seleccionar", command=lambda: self.seleccionar([self.id_entrada,lista_de_secciones_id])).grid(row=1, column=2, columnspan=2, pady=20)
+            tk.Button(self, text="Seleccionar", command= self.seleccionar).grid(row=1, column=2, columnspan=2, pady=20)
 
    
         tk.Label(self, text="Descripción").grid(row=1, column=0, padx=10, pady=5, sticky="w")
