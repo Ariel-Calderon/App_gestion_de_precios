@@ -44,7 +44,7 @@ class Entidad:
             if (campo != self.campo_clave):
                 campos_sin_id.append(campo)
                 valores.append(getattr(self,campo,None))
-        base.actualizar(self.tabla,campos_sin_id,valores,f" {self.campo_clave} = {self.id}")
+        return base.actualizar(self.tabla,campos_sin_id,valores,f" {self.campo_clave} = {self.id}")
 
     def guardar(self):
         valores = []
@@ -59,9 +59,12 @@ class Entidad:
                     valores.append(valor)
                     campos.append(campo)
                 else:
-                    return False #si ya un registro con ese id
-        base.insertar(self.tabla,campos,valores)
-        return True
+                    return [False, "Ya existe un registro con la misma clave"] #si ya un registro con ese id
+        id_insertado = base.insertar(self.tabla,campos,valores)
+        if id_insertado is not None:
+            return [True, "El registro ha sido guardado exitosamente.",id_insertado]
+        else:
+            return [False, "Error al intentar guardar el registro"]
     
     #Asigna los valores de los campos de un formulario a los atributos del objeto
     def asignar_valores(self,formulario):    
@@ -114,8 +117,7 @@ class Lista:
                     valor.append(getattr(linea, columna, None))
             else:
                 valor = getattr(linea, columnas[0],None)
-            valores.append(valor)
-        print (valores)
+            valores.append(valor)        
         return valores
 
 

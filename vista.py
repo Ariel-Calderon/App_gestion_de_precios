@@ -1,8 +1,9 @@
 from cProfile import label
 from pickle import FALSE
 import tkinter as tk
-from tkinter import TRUE, Menu, ttk, messagebox
-from logica import Producto, Seccion, ListaSecciones
+from tkinter import Menu, messagebox
+from tkinter import ttk
+import logica
 
 from setuptools import Command
 
@@ -115,12 +116,23 @@ class Plantilla(tk.Toplevel):
         if self.chequear_campos_obligatorios():
             self.objeto = self.clase_objeto()        
             self.objeto.asignar_valores(self)
-            self.objeto.guardar()
+            guardado = self.objeto.guardar()
+            if guardado[0]:
+                 self.messagebox_temporal("Guardado",guardado[1],1500)
+                 self.reset_formulario()
+            else:
+                self.messagebox_temporal("Error",guardado[1],1500)
 
     def modificar(self):
         if self.chequear_campos_obligatorios():
             self.objeto.asignar_valores(self)
-            self.objeto.modificar()
+            if self.objeto.modificar() is not None:
+                self.messagebox_temporal("Modificado","El registro fue modificado correctamente.",1500)
+                self.reset_formulario()
+                self.switch_widgets()
+            else:
+                self.messagebox_temporal("Error", "El registro no pudo ser modificado",1500)
+
     
     def seleccionar(self):   
         if (len(self.clave_principal)>1):
@@ -151,7 +163,7 @@ class Plantilla(tk.Toplevel):
         print (self.campos_obligatorios)     
         for campo in self.campos_obligatorios:
             variable = campo.cget("textvariable")
-            valor = self.getvar(variable).strip()
+            valor = self.getvar(variable) #.strip()
             print (valor)
             if valor is None or valor == "":                
                 mensaje += f"El campo {self.obtener_label(campo)} está vacío\n"
@@ -198,12 +210,12 @@ class Plantilla(tk.Toplevel):
         campo_clave = parametros[1]
         es_clave = (campo_clave==nombre_campo)
         if es_clave:
-            lista_clase= locals()["Lista"+ tabla]  
+            lista_clase = getattr(logica, "Lista" + tabla)
         else:
-            lista_clase= locals()["Lista"+nombre_campo]
+            lista_clase = getattr(logica, "Lista" + nombre_campo)
         lista_objeto=lista_clase()
-        lista_mostrar= lista_objeto.listar_columnas(campo_para_mostrar)
-        lista_guardar=lista_objeto.listar_columnas(campo_para_guardar)
+        lista_mostrar= lista_objeto.listar_columnas([campo_para_mostrar])
+        lista_guardar=lista_objeto.listar_columnas([campo_para_guardar])
 
         tk.Label(self, text=etiqueta).grid(row=0, column=0, padx=padx_input, pady=pady_input, sticky="w")
         setattr(self,nombre_campo + "_variable", tk.StringVar())
@@ -212,7 +224,6 @@ class Plantilla(tk.Toplevel):
         setattr(self,nombre_campo + "_entrada", ttk.Combobox(self,textvariable=variable,values=lista_mostrar,state="readonly"))
         combobox = getattr(self,nombre_campo + "_entrada")
         combobox.grid(row=0, column=1, padx=10, pady=5)  
-
         if es_clave:
             self.clave_principal.append(combobox,lista_guardar)
         else:
@@ -220,6 +231,29 @@ class Plantilla(tk.Toplevel):
 
         if obligatorio:
             self.campos_obligatorios.append(combobox)
+
+    def messagebox_temporal(self,titulo, mensaje, duracion=2000):        
+        ventana_emergente = tk.Toplevel()
+        ventana_emergente.title(titulo)
+        ventana_emergente.geometry("300x100")
+                
+        ventana_emergente.transient()
+        ventana_emergente.grab_set()
+        
+        mensaje_label = tk.Label(ventana_emergente, text=mensaje, wraplength=250)
+        mensaje_label.pack(expand=True, fill="both", padx=10, pady=10)
+               
+        ventana_emergente.after(duracion, ventana_emergente.destroy)
+
+    def reset_formulario(self):       
+        for widget in self.winfo_children():
+            print(f"Widget detectado: {widget}, Tipo: {type(widget)}")            
+            if isinstance(widget, ttk.Combobox):                
+                widget.set("")
+                print ("combobox detectado")
+            elif isinstance(widget, tk.Entry):
+                widget.delete(0, tk.END)  
+                print ("entry detectado")
 
 
 
@@ -243,15 +277,15 @@ class Plantilla(tk.Toplevel):
 class PlantillaProducto(Plantilla):
 
     def __init__(self, parent,titulo,modo="guardar"):
-        super().__init__(parent,Producto)
+        super().__init__(parent,logica.Producto)
         self.title(titulo)
         self.geometry("400x300")            
 
         
         
-        ''''
+        '''
         tk.Label(self, text="Sección ").grid(row=0, column=0, padx=10, pady=5, sticky="w")        
-        secciones = ListaSecciones()
+        secciones = logica.ListaSecciones()
         lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
         lista_de_secciones_id = secciones.listar_columnas(["id"])  
         self.seccion_variable = tk.StringVar()
@@ -263,9 +297,9 @@ class PlantillaProducto(Plantilla):
         combo_1= [self.seccion_entrada,"Secciones",lista_de_secciones_id]
         self.lista_de_comboboxes.append(combo_1)        
         self.campos_obligatorios.append(self.seccion_entrada)
-'''
+        ''' 
         self.crear_combobox(True,"Sección","Secciones")
-        
+             
         tk.Label(self, text="Código de PLU").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.codigo_de_PLU = tk.StringVar()
         self.codigo_de_PLU_entrada = tk.Entry(self,textvariable=self.codigo_de_PLU,validate="key",validatecommand=self.validacion_enteros)
@@ -298,13 +332,13 @@ class PlantillaProducto(Plantilla):
 class PlantillaSeccion(Plantilla):
 
     def __init__(self, parent,titulo,modo="guardar"):
-        super().__init__(parent,Seccion)
+        super().__init__(parent,logica.Seccion)
         self.title(titulo)
         self.geometry("400x300") 
 
         
         if (modo=="modificar"):                        
-            secciones = ListaSecciones()
+            secciones = logica.ListaSecciones()
             lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
             
 
