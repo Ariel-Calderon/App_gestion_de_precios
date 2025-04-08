@@ -108,7 +108,9 @@ class Plantilla(tk.Toplevel):
         self.clave_principal = [] #[objeto combobox, lista de id] cuando está implementada con un combobox
                                   #[objeto entry] cuando se trata de una entrada de texto y el valor se obtiene con get
         self.campos_obligatorios=[] #[campo de entrada] tiene que ser el objeto del input, sea un combobox o un entry simple 
-    
+        self.validacion_decimales = (self.register(self.solo_decimales_con_coma), '%P')
+        self.validacion_enteros = (self.register(self.solo_numeros),'%P')
+
     def guardar(self):
         if self.chequear_campos_obligatorios():
             self.objeto = self.clase_objeto()        
@@ -149,7 +151,7 @@ class Plantilla(tk.Toplevel):
         print (self.campos_obligatorios)     
         for campo in self.campos_obligatorios:
             variable = campo.cget("textvariable")
-            valor = self.getvar(variable)
+            valor = self.getvar(variable).strip()
             print (valor)
             if valor is None or valor == "":                
                 mensaje += f"El campo {self.obtener_label(campo)} está vacío\n"
@@ -172,6 +174,62 @@ class Plantilla(tk.Toplevel):
                 if int(info_label["row"]) == fila and int(info_label["column"]) == columna -1:
                     return widget.cget("text")
         return None
+    
+    def solo_decimales_con_coma(self, texto):
+        if texto == "":
+            return True
+        if texto.count(",") > 1:
+            return False
+        try:
+            float(texto.replace(",", "."))
+            return True
+        except ValueError:
+            return False
+        
+    def solo_numeros(self, texto):
+        return texto.isdigit() or texto == ""
+    
+    def crear_entry(self):
+        pass
+
+    def crear_combobox(self, obligatorio:bool, etiqueta: str, nombre_campo:str,campo_para_mostrar="descripcion",campo_para_guardar="id", padx_input=10, pady_input=5 ):
+        parametros = self.clase_objeto.ver_parametros()
+        tabla = parametros[0]
+        campo_clave = parametros[1]
+        es_clave = (campo_clave==nombre_campo)
+        if es_clave:
+            lista_clase= locals()["Lista"+ tabla]  
+        else:
+            lista_clase= locals()["Lista"+nombre_campo]
+        lista_objeto=lista_clase()
+        lista_mostrar= lista_objeto.listar_columnas(campo_para_mostrar)
+        lista_guardar=lista_objeto.listar_columnas(campo_para_guardar)
+
+        tk.Label(self, text=etiqueta).grid(row=0, column=0, padx=padx_input, pady=pady_input, sticky="w")
+        setattr(self,nombre_campo + "_variable", tk.StringVar())
+        variable = getattr(self, nombre_campo + "_variable")
+                
+        setattr(self,nombre_campo + "_entrada", ttk.Combobox(self,textvariable=variable,values=lista_mostrar,state="readonly"))
+        combobox = getattr(self,nombre_campo + "_entrada")
+        combobox.grid(row=0, column=1, padx=10, pady=5)  
+
+        if es_clave:
+            self.clave_principal.append(combobox,lista_guardar)
+        else:
+            self.lista_de_comboboxes.append([combobox,nombre_campo,lista_guardar])
+
+        if obligatorio:
+            self.campos_obligatorios.append(combobox)
+
+
+
+
+
+
+
+
+
+        
 
 
    
@@ -188,10 +246,11 @@ class PlantillaProducto(Plantilla):
         super().__init__(parent,Producto)
         self.title(titulo)
         self.geometry("400x300")            
+
         
         
-        tk.Label(self, text="Sección: ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        #self.nombre_de_seccion = tk.StringVar()
+        ''''
+        tk.Label(self, text="Sección ").grid(row=0, column=0, padx=10, pady=5, sticky="w")        
         secciones = ListaSecciones()
         lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
         lista_de_secciones_id = secciones.listar_columnas(["id"])  
@@ -201,14 +260,15 @@ class PlantillaProducto(Plantilla):
 
         #declaro el combobox y lo agrego a la lista, para que pueda ser procesado
         #en las funciones de guardar, seleccionar y modificar.
-        combo_1= [self.seccion_entrada,"secciones",lista_de_secciones_id]
+        combo_1= [self.seccion_entrada,"Secciones",lista_de_secciones_id]
         self.lista_de_comboboxes.append(combo_1)        
         self.campos_obligatorios.append(self.seccion_entrada)
-
-
+'''
+        self.crear_combobox(True,"Sección","Secciones")
+        
         tk.Label(self, text="Código de PLU").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.codigo_de_PLU = tk.StringVar()
-        self.codigo_de_PLU_entrada = tk.Entry(self,textvariable=self.codigo_de_PLU)
+        self.codigo_de_PLU_entrada = tk.Entry(self,textvariable=self.codigo_de_PLU,validate="key",validatecommand=self.validacion_enteros)
         self.codigo_de_PLU_entrada.grid(row=1, column=1, padx=10, pady=5)
 
         self.clave_principal = [self.codigo_de_PLU]
@@ -265,7 +325,7 @@ class PlantillaSeccion(Plantilla):
 
         tk.Label(self, text="Porcentaje de ganancia").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.porcentaje_ganancia = tk.StringVar()
-        self.porcentaje_ganancia_entrada = tk.Entry(self,textvariable=self.porcentaje_ganancia)
+        self.porcentaje_ganancia_entrada = tk.Entry(self,textvariable=self.porcentaje_ganancia,validate="key",validatecommand=self.validacion_decimales)
         self.porcentaje_ganancia_entrada.grid(row=2, column=1, padx=10, pady=5)
 
         if(modo=="guardar"):            

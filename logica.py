@@ -7,19 +7,19 @@ base = Modelo("database.db")
 class Entidad:
 
     #se asignan los atributos de manera dinámica, usando los nombres de los campos de la tabla
-    def __init__(self,tabla,campo_clave, id=None, lista_de_campos=None,lista_de_valores=None):
-        self.tabla = tabla
-        self.campo_clave = campo_clave
+    def __init__(self, id=None, lista_de_campos=None,lista_de_valores=None):
+        self.tabla = self.__class__.tabla
+        self.campo_clave = self.__class__.campo_clave
         self.id = id 
         #La lista de campos y valores vienen como argumento cuando es para una lista de objetos
         #de manera que no tenga que consultar a la base con cada construcción
         if (lista_de_campos is not None):
             self.lista_de_campos = lista_de_campos
         elif(id is not None):
-            self.lista_de_campos = base.obtener_campos(tabla)
-            lista_de_valores = base.seleccionar(tabla, "*", f"{campo_clave} = ?",[id])[0]
+            self.lista_de_campos = base.obtener_campos(self.tabla)
+            lista_de_valores = base.seleccionar(self.tabla, "*", f"{self.campo_clave} = ?",[id])[0]
         else:
-            self.lista_de_campos = base.obtener_campos(tabla)
+            self.lista_de_campos = base.obtener_campos(self.tabla)
 
         if (id is None and lista_de_valores is None):
             for campo in self.lista_de_campos:
@@ -28,6 +28,11 @@ class Entidad:
             for campo, valor in zip(self.lista_de_campos,lista_de_valores):
                 setattr(self,campo,valor)
 
+    @classmethod
+    def ver_parametros(cls): 
+        print (cls.tabla)
+        print (cls.campo_clave)       
+        return [cls.tabla,cls.campo_clave]
 
     def borrar(self):
         base.eliminar(self.tabla,f"{self.campo_clave} = ?",[self.id])
@@ -117,16 +122,20 @@ class Lista:
 
 
 class Producto(Entidad):
-    def __init__(self, id=None,lista_de_campos=None,lista_de_valores=None):
-        super().__init__("Productos","codigo_de_PLU", id,lista_de_campos,lista_de_valores)
+    tabla = "Productos"
+    campo_clave = "codigo_de_PLU"
+  #  def __init__(self, id=None,lista_de_campos=None,lista_de_valores=None):
+  #      super().__init__("Productos","codigo_de_PLU", id,lista_de_campos,lista_de_valores)
 
 class ListaProductos (Lista):
     def __init__(self,condicion=None,valores=None):
         super().__init__("Productos",Producto,condicion,valores)
 
 class Seccion(Entidad):
-    def __init__(self, id=None, lista_de_campos=None, lista_de_valores=None):
-        super().__init__("Secciones", "id", id, lista_de_campos, lista_de_valores)
+    tabla = "Secciones"
+    campo_clave= "id"
+#    def __init__(self, id=None, lista_de_campos=None, lista_de_valores=None):
+#        super().__init__("Secciones", "id", id, lista_de_campos, lista_de_valores)
 
 class ListaSecciones(Lista):
     def __init__(self, condicion=None, valores=None):
