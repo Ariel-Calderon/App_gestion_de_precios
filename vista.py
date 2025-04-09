@@ -102,15 +102,23 @@ class App(tk.Tk):
 
 class Plantilla(tk.Toplevel):
 
-    def __init__(self,parent,clase_objeto):
+    def __init__(self,parent,clase_objeto,modo):
         super().__init__(parent)
         self.clase_objeto = clase_objeto
+        self.modo = modo
+        self.lista_de_widgets = []  #[etiqueta,widget,clave:bool]  
         self.lista_de_comboboxes = [] # [[objeto combox,"campo clave externa db",lista de id],] Sin incluir la clave principal
         self.clave_principal = [] #[objeto combobox, lista de id] cuando está implementada con un combobox
                                   #[objeto entry] cuando se trata de una entrada de texto y el valor se obtiene con get
         self.campos_obligatorios=[] #[campo de entrada] tiene que ser el objeto del input, sea un combobox o un entry simple 
         self.validacion_decimales = (self.register(self.solo_decimales_con_coma), '%P')
         self.validacion_enteros = (self.register(self.solo_numeros),'%P')
+
+    def cancelar(self):
+        self.reset_formulario()
+        if self.modo == "modificar":
+            self.switch_widgets()
+            self.reset_formulario() #hay que resetear antes y despues de switchear los widgets
 
     def guardar(self):
         if self.chequear_campos_obligatorios():
@@ -128,8 +136,9 @@ class Plantilla(tk.Toplevel):
             self.objeto.asignar_valores(self)
             if self.objeto.modificar() is not None:
                 self.messagebox_temporal("Modificado","El registro fue modificado correctamente.",1500)
-                self.reset_formulario()
+                self.reset_formulario() #se resetean sólo los widgets activos
                 self.switch_widgets()
+                self.reset_formulario() #se resetean los widgets restantes
             else:
                 self.messagebox_temporal("Error", "El registro no pudo ser modificado",1500)
 
@@ -144,6 +153,29 @@ class Plantilla(tk.Toplevel):
         self.objeto = self.clase_objeto(id)
         self.objeto.completar_campos(self)
         self.switch_widgets()
+    
+    def messagebox_temporal(self,titulo, mensaje, duracion=2000):        
+        ventana_emergente = tk.Toplevel()
+        ventana_emergente.title(titulo)
+        ventana_emergente.geometry("300x100")
+                
+        ventana_emergente.transient()
+        ventana_emergente.grab_set()
+        
+        mensaje_label = tk.Label(ventana_emergente, text=mensaje, wraplength=250)
+        mensaje_label.pack(expand=True, fill="both", padx=10, pady=10)
+               
+        ventana_emergente.after(duracion, ventana_emergente.destroy)
+
+    def reset_formulario(self):       
+        for widget in self.winfo_children():
+            print(f"Widget detectado: {widget}, Tipo: {type(widget)}")            
+            if isinstance(widget, ttk.Combobox):                
+                widget.set("")
+                print ("combobox detectado")
+            elif isinstance(widget, tk.Entry):
+                widget.delete(0, tk.END)  
+                print ("entry detectado")
 
     def switch_widgets(self):
         for widget in self.winfo_children():
@@ -199,177 +231,141 @@ class Plantilla(tk.Toplevel):
             return False
         
     def solo_numeros(self, texto):
-        return texto.isdigit() or texto == ""
-    
-    def crear_entry(self):
-        pass
+        return texto.isdigit() or texto == ""    
 
-    def crear_combobox(self, obligatorio:bool, etiqueta: str, nombre_campo:str,campo_para_mostrar="descripcion",campo_para_guardar="id", padx_input=10, pady_input=5 ):
+
+
+    def crear_entry(self, obligatorio:bool, etiqueta: str, nombre_campo:str, validacion = None):
         parametros = self.clase_objeto.ver_parametros()
         tabla = parametros[0]
         campo_clave = parametros[1]
-        es_clave = (campo_clave==nombre_campo)
-        if es_clave:
-            lista_clase = getattr(logica, "Lista" + tabla)
-        else:
-            lista_clase = getattr(logica, "Lista" + nombre_campo)
-        lista_objeto=lista_clase()
-        lista_mostrar= lista_objeto.listar_columnas([campo_para_mostrar])
-        lista_guardar=lista_objeto.listar_columnas([campo_para_guardar])
 
-        tk.Label(self, text=etiqueta).grid(row=0, column=0, padx=padx_input, pady=pady_input, sticky="w")
-        setattr(self,nombre_campo + "_variable", tk.StringVar())
-        variable = getattr(self, nombre_campo + "_variable")
-                
-        setattr(self,nombre_campo + "_entrada", ttk.Combobox(self,textvariable=variable,values=lista_mostrar,state="readonly"))
-        combobox = getattr(self,nombre_campo + "_entrada")
-        combobox.grid(row=0, column=1, padx=10, pady=5)  
-        if es_clave:
-            self.clave_principal.append(combobox,lista_guardar)
+        etiqueta = tk.Label(self, text=etiqueta)
+        setattr(self,nombre_campo, tk.StringVar())
+        variable = getattr(self, nombre_campo)
+
+        if validacion is not None:
+            if validacion == "decimales":
+                setattr(self,nombre_campo + "_entrada", tk.Entry(self,textvariable=variable,validate="key",validatecommand=self.validacion_decimales))
+            elif validacion == "enteros":
+                setattr(self,nombre_campo + "_entrada", tk.Entry(self,textvariable=variable,validate="key",validatecommand=self.validacion_enteros))            
         else:
-            self.lista_de_comboboxes.append([combobox,nombre_campo,lista_guardar])
+            setattr(self,nombre_campo + "_entrada", tk.Entry(self,textvariable=variable))
+
+        entry = getattr(self,nombre_campo + "_entrada")
+
+        if campo_clave == nombre_campo:
+            self.clave_principal.append(entry)
 
         if obligatorio:
-            self.campos_obligatorios.append(combobox)
+            self.campos_obligatorios.append(entry)
 
-    def messagebox_temporal(self,titulo, mensaje, duracion=2000):        
-        ventana_emergente = tk.Toplevel()
-        ventana_emergente.title(titulo)
-        ventana_emergente.geometry("300x100")
-                
-        ventana_emergente.transient()
-        ventana_emergente.grab_set()
-        
-        mensaje_label = tk.Label(ventana_emergente, text=mensaje, wraplength=250)
-        mensaje_label.pack(expand=True, fill="both", padx=10, pady=10)
-               
-        ventana_emergente.after(duracion, ventana_emergente.destroy)
+        self.lista_de_widgets.append([etiqueta,entry,(campo_clave==nombre_campo)])
 
-    def reset_formulario(self):       
-        for widget in self.winfo_children():
-            print(f"Widget detectado: {widget}, Tipo: {type(widget)}")            
-            if isinstance(widget, ttk.Combobox):                
-                widget.set("")
-                print ("combobox detectado")
-            elif isinstance(widget, tk.Entry):
-                widget.delete(0, tk.END)  
-                print ("entry detectado")
-
-
-
-
-
-
-
-
-
+  
         
 
 
-   
-                
-                
+    def crear_combobox(self, obligatorio:bool, etiqueta: str, nombre_campo:str,campo_para_mostrar="descripcion",campo_para_guardar="id"):
+            parametros = self.clase_objeto.ver_parametros()
+            tabla = parametros[0]
+            campo_clave = parametros[1]
+
+            es_clave = (campo_clave==nombre_campo)
+            if self.modo != "guardar" or not es_clave:                
+                if es_clave:
+                    lista_clase = getattr(logica, "Lista" + tabla)
+                else:
+                    lista_clase = getattr(logica, "Lista" + nombre_campo)
+                lista_objeto=lista_clase()
+                lista_mostrar= lista_objeto.listar_columnas([campo_para_mostrar])
+                lista_guardar=lista_objeto.listar_columnas([campo_para_guardar])
+
+                etiqueta = tk.Label(self, text=etiqueta)
+                setattr(self,nombre_campo + "_variable", tk.StringVar())
+                variable = getattr(self, nombre_campo + "_variable")
+                        
+                setattr(self,nombre_campo + "_entrada", ttk.Combobox(self,textvariable=variable,values=lista_mostrar,state="readonly"))
+                combobox = getattr(self,nombre_campo + "_entrada")
+                combobox.grid(row=0, column=1, padx=10, pady=5)  
+                if es_clave:
+                    self.clave_principal.append(combobox)
+                    self.clave_principal.append(lista_guardar)
+                else:
+                    self.lista_de_comboboxes.append([combobox,nombre_campo,lista_guardar])
+
+                if obligatorio:
+                    self.campos_obligatorios.append(combobox)
+
+                self.lista_de_widgets.append([etiqueta,combobox,es_clave])
+
+
+    
+
+    def render_formulario_ABM (self):
+        fila = 0
+        for widget in self.lista_de_widgets:
+            widget[0].grid(row=fila, column=0, padx=10, pady=5, sticky="w")
+            widget[1].grid(row=fila, column=1, padx=10, pady=5)  
+            if widget[2] and self.modo=="modificar":
+                    widget[0].configure(state="disabled") 
+                    widget[1].configure(state="disabled")          
+                    tk.Button(self, text="Seleccionar", command= self.seleccionar,state="disabled").grid(row=fila, column=2, columnspan=2, pady=20)
+            fila += 1
+
+        tk.Button(self, text="Cancelar", command=self.cancelar).grid(row=fila, column=1, columnspan=2, pady=20)
+        if(self.modo=="guardar"):            
+            tk.Button(self, text="Guardar", command=self.guardar).grid(row=fila, column=0, columnspan=2, pady=20)
+        else:
+            tk.Button(self, text="Modificar", command=self.modificar).grid(row=fila, column=0, columnspan=2, pady=20)
+            self.switch_widgets()
+        
+
+
+
+
+
+
+
+
+
 
 
 
 
 
 class PlantillaProducto(Plantilla):
+    
 
     def __init__(self, parent,titulo,modo="guardar"):
-        super().__init__(parent,logica.Producto)
+        super().__init__(parent,logica.Producto,modo)
         self.title(titulo)
-        self.geometry("400x300")            
+        self.geometry("400x300")   
 
-        
-        
-        '''
-        tk.Label(self, text="Sección ").grid(row=0, column=0, padx=10, pady=5, sticky="w")        
-        secciones = logica.ListaSecciones()
-        lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
-        lista_de_secciones_id = secciones.listar_columnas(["id"])  
-        self.seccion_variable = tk.StringVar()
-        self.seccion_entrada = ttk.Combobox(self,textvariable=self.seccion_variable,values=lista_de_secciones_descripcion,state="readonly")
-        self.seccion_entrada.grid(row=0, column=1, padx=10, pady=5)      
-
-        #declaro el combobox y lo agrego a la lista, para que pueda ser procesado
-        #en las funciones de guardar, seleccionar y modificar.
-        combo_1= [self.seccion_entrada,"Secciones",lista_de_secciones_id]
-        self.lista_de_comboboxes.append(combo_1)        
-        self.campos_obligatorios.append(self.seccion_entrada)
-        ''' 
         self.crear_combobox(True,"Sección","Secciones")
-             
-        tk.Label(self, text="Código de PLU").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        self.codigo_de_PLU = tk.StringVar()
-        self.codigo_de_PLU_entrada = tk.Entry(self,textvariable=self.codigo_de_PLU,validate="key",validatecommand=self.validacion_enteros)
-        self.codigo_de_PLU_entrada.grid(row=1, column=1, padx=10, pady=5)
+        self.crear_entry(True,"Código de PLU","codigo_de_PLU","enteros")
+        self.crear_entry(True, "Descripción","descripcion")
 
-        self.clave_principal = [self.codigo_de_PLU]
-        self.campos_obligatorios.append(self.codigo_de_PLU_entrada)
+        self.render_formulario_ABM()  
+            
 
-        if (modo=="modificar"): 
-            self.codigo_de_PLU_entrada.configure(state="disabled")           
-            tk.Button(self, text="Seleccionar", command= self.seleccionar,state="disabled").grid(row=1, column=2, columnspan=2, pady=20)
-
-        tk.Label(self, text="Descripción").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        self.descripcion = tk.StringVar()
-        self.descripcion_entrada = tk.Entry(self,textvariable=self.descripcion)
-        self.descripcion_entrada.grid(row=2, column=1, padx=10, pady=5)
-
-        self.campos_obligatorios.append(self.descripcion_entrada)
-
-
-        if(modo=="guardar"):            
-            tk.Button(self, text="Guardar", command=self.guardar).grid(row=3, column=0, columnspan=2, pady=20)
-        else:
-            tk.Button(self, text="Modificar", command=self.modificar).grid(row=3, column=0, columnspan=2, pady=20)
-            self.switch_widgets()
 
    
-
 
 class PlantillaSeccion(Plantilla):
 
     def __init__(self, parent,titulo,modo="guardar"):
-        super().__init__(parent,logica.Seccion)
+        super().__init__(parent,logica.Seccion,modo)
         self.title(titulo)
-        self.geometry("400x300") 
+        self.geometry("400x300")     
 
-        
-        if (modo=="modificar"):                        
-            secciones = logica.ListaSecciones()
-            lista_de_secciones_descripcion = secciones.listar_columnas(["descripcion"])
+        self.crear_combobox(False,"Sección","id") #no es obligatorio cuando el id es autoincrement en la base
+        self.crear_entry(True,"Descripción", "descripcion")
+        self.crear_entry(False,"Porcentaje de Ganancia", "porcentaje_ganancia","decimales")
+
+        self.render_formulario_ABM()
+
             
-
-            tk.Label(self, text="Sección ").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-            #no es necesario usar tk.StringVar() ya que el id se obtiene de la lista
-            self.id_entrada = ttk.Combobox(self,  values=lista_de_secciones_descripcion)
-            self.id_entrada.grid(row=0, column=1, padx=10, pady=5)
-
-            self.clave_principal = [self.id_entrada,secciones.listar_columnas(["id"])]
-                      
-            tk.Button(self, text="Seleccionar", command= self.seleccionar).grid(row=1, column=2, columnspan=2, pady=20)
-
-   
-        tk.Label(self, text="Descripción").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        self.descripcion = tk.StringVar()
-        self.descripcion_entrada = tk.Entry(self,textvariable=self.descripcion)
-        self.descripcion_entrada.grid(row=1, column=1, padx=10, pady=5)
-
-        tk.Label(self, text="Porcentaje de ganancia").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        self.porcentaje_ganancia = tk.StringVar()
-        self.porcentaje_ganancia_entrada = tk.Entry(self,textvariable=self.porcentaje_ganancia,validate="key",validatecommand=self.validacion_decimales)
-        self.porcentaje_ganancia_entrada.grid(row=2, column=1, padx=10, pady=5)
-
-        if(modo=="guardar"):            
-            tk.Button(self, text="Guardar", command=self.guardar).grid(row=3, column=0, columnspan=2, pady=20)
-        else:
-            tk.Button(self, text="Modificar", command=self.modificar).grid(row=3, column=0, columnspan=2, pady=20)
-
-  
-
-
 
 
 if __name__ == "__main__":
