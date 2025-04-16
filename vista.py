@@ -143,12 +143,13 @@ class Plantilla(tk.Toplevel):
                 self.messagebox_temporal("Error", "El registro no pudo ser modificado",1500)
 
     
-    def seleccionar(self):   
-        if (len(self.clave_principal)>1):
-            indice = self.clave_principal[0].current()
-            id = self.clave_principal[1][indice]
-        else:                
-            id = self.clave_principal[0].get()
+    def seleccionar(self,id = None):
+        if id is None: #Si no recibe el id significa se encuentra en un Combobox o un Entry:
+            if (len(self.clave_principal)>1):  #Si hay dos elementos self.clave_principal > es un Combobox:
+                indice = self.clave_principal[0].current() 
+                id = self.clave_principal[1][indice]
+            else:                              #Si hay uno sólo > es un Entry:
+                id = self.clave_principal[0].get()
         
         self.objeto = self.clase_objeto(id)
         self.objeto.completar_campos(self)
