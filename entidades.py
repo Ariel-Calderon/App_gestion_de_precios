@@ -19,8 +19,8 @@ controlador.registrar_entidades((Producto,Seccion))
 
 
 """
-cargarArchivo = controlador.Operacion(ListaProductos)
-cargarArchivo.abrir_archivo_csv("datos.csv")
+cargarArchivo = controlador.ArchivoCsv(Producto)
+cargarArchivo.abrir_archivo("datos.csv")
 print(cargarArchivo.lista_contenido)
 cargarArchivo.crear_lista_de_objetos()
 

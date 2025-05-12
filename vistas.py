@@ -31,3 +31,12 @@ class PlantillaSeccion(Plantilla):
         self.crear_entry(False,"Porcentaje de Ganancia", "porcentaje_ganancia","decimales")
 
         self.render_formulario_ABM()
+
+
+class PlantillaCSV(Plantilla):
+    def __init__(self, parent, modo="guardar"):
+        super().__init__(parent, entidades.Producto, modo)
+        self.title("Cargar archivo CSV")
+        self.geometry("400x300")
+
+        self.render_formulario_CSV()

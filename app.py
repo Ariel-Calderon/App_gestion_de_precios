@@ -1,4 +1,4 @@
-from vistas import PlantillaProducto, PlantillaSeccion
+from vistas import PlantillaProducto, PlantillaSeccion, PlantillaCSV
 from tkinter import Menu
 import tkinter as tk
 
@@ -46,7 +46,8 @@ class App(tk.Tk):
         
 
     def cargar_archivo(self):
-        pass
+        formulario= PlantillaCSV(self)
+        formulario.grab_set()
 
     def generar_archivo(self):
         pass
