@@ -1,9 +1,7 @@
 import entidades
-from ABM_MVC.vista import Plantilla
+from ABM_MVC.vista import Formulario_ABM,Formulario_CSV
 
-class PlantillaProducto(Plantilla):
-    
-
+class ABM_Producto(Formulario_ABM):  
     def __init__(self, parent,titulo,modo="guardar"):
         super().__init__(parent,entidades.Producto,modo)
         self.title(titulo)
@@ -13,14 +11,9 @@ class PlantillaProducto(Plantilla):
         self.crear_entry(True,"Código de PLU","codigo_de_PLU","enteros")
         self.crear_entry(True, "Descripción","descripcion")
 
-        self.render_formulario_ABM()  
-            
+        self.render_formulario_ABM()          
 
-
-   
-
-class PlantillaSeccion(Plantilla):
-
+class ABM_Seccion(Formulario_ABM):
     def __init__(self, parent,titulo,modo="guardar"):
         super().__init__(parent,entidades.Seccion,modo)
         self.title(titulo)
@@ -32,11 +25,9 @@ class PlantillaSeccion(Plantilla):
 
         self.render_formulario_ABM()
 
-
-class PlantillaCSV(Plantilla):
-    def __init__(self, parent, modo="guardar"):
+class Gestion_Archivos_CSV(Formulario_CSV):
+    def __init__(self, parent, modo="cargar"):
         super().__init__(parent, entidades.Producto, modo)
         self.title("Cargar archivo CSV")
         self.geometry("400x300")
 
-        self.render_formulario_CSV()

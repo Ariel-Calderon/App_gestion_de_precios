@@ -1,4 +1,4 @@
-from vistas import PlantillaProducto, PlantillaSeccion, PlantillaCSV
+from vistas import ABM_Producto, ABM_Seccion, Gestion_Archivos_CSV
 from tkinter import Menu
 import tkinter as tk
 
@@ -46,7 +46,7 @@ class App(tk.Tk):
         
 
     def cargar_archivo(self):
-        formulario= PlantillaCSV(self)
+        formulario= Gestion_Archivos_CSV(self)
         formulario.grab_set()
 
     def generar_archivo(self):
@@ -56,28 +56,28 @@ class App(tk.Tk):
         pass
 
     def cargar_producto(self):
-        formulario= PlantillaProducto(self,"Cargar nuevo producto")
+        formulario= ABM_Producto(self,"Cargar nuevo producto")
         formulario.grab_set()
 
     def borrar_producto(self):
         pass
 
     def modificar_producto(self):
-        formulario = PlantillaProducto(self,"Modificar un producto","modificar")
+        formulario = ABM_Producto(self,"Modificar un producto","modificar")
         formulario.grab_set()
 
     def listar_secciones(self):
         pass
 
     def cargar_secciones(self):
-        formulario=PlantillaSeccion(self,"Cargar nueva sección")
+        formulario=ABM_Seccion(self,"Cargar nueva sección")
         formulario.grab_set()
 
     def borrar_secciones(self):
         pass
 
     def modificar_secciones(self):
-        formulario=PlantillaSeccion(self,"Modificar una Sección","modificar")
+        formulario=ABM_Seccion(self,"Modificar una Sección","modificar")
         formulario.grab_set()
 
     def listar_proveedores(self):
