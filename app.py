@@ -46,8 +46,8 @@ class App(tk.Tk):
         
 
     def cargar_archivo(self):
-        formulario= Gestion_Archivos_CSV(self)
-        formulario.grab_set()
+        Gestion_Archivos_CSV() 
+        
 
     def generar_archivo(self):
         pass

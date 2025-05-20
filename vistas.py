@@ -26,8 +26,7 @@ class ABM_Seccion(Formulario_ABM):
         self.render_formulario_ABM()
 
 class Gestion_Archivos_CSV(Formulario_CSV):
-    def __init__(self, parent, modo="cargar"):
-        super().__init__(parent, entidades.Producto, modo)
-        self.title("Cargar archivo CSV")
-        self.geometry("400x300")
+    def __init__(self,  modo="cargar"): 
+        super().__init__( entidades.Producto, modo) 
+        
 
